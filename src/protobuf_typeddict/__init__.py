@@ -180,9 +180,9 @@ def generate(src: Path, extra_anno: bool = False, maps: bool = True, preserve_na
 @click.argument("dst", type=click.Path(dir_okay=False, path_type=Path))
 @click.option("--extra-anno/--no-extra-anno", help="Add field numbers/protobuf types for reference")
 @click.option("--maps/--no-maps", help="Describe protobuf maps as dicts", default=True)
-@click.option("--camel-names/--no-camel-name", help="Convert field names to lowerCamel", default=False)
+@click.option("--camel-names/--no-camel-name", help="Convert field names to lowerCamel")
 def cli(src: Path, dst: Path, extra_anno: bool, maps: bool, camel_names: bool):
-    """Create TypedDict declarations from _pb2.py"""
+    """Create TypedDict declarations from protoc-generated Python code"""
 
     doc = generate(src, extra_anno=extra_anno, maps=maps, preserve_names=not camel_names)
     dst.write_text(doc)
