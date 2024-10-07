@@ -77,7 +77,7 @@ result = pb2tf.generate(my_module_pb2)
 print(result)
 ```
 
-NOTE: The pb2td generated the TypedDicts from protoc-generated `_pb2.py`/`_pb3.py` files, not the `.proto`.
+NOTE: The pb2td makes TypedDicts from protoc-generated `_pb2.py`/`_pb3.py` files, not the `.proto`.
 
 ## Limitations
 
