@@ -17,8 +17,9 @@ import click
 
 @dataclass
 class Options:
-    extra_anno: bool
+    add_extra_anno: bool
     maps_as_dict: bool
+    preserve_names: bool
 
 
 class Typ(NamedTuple):
@@ -54,6 +55,23 @@ class Kinds(enum.IntEnum):
     REQUIRED = 2
 
 
+# vendored in from protobuf
+def to_lowercamel(name: str):
+    capitalize_next = False
+    result = []
+
+    for c in name:
+        if c == "_":
+            capitalize_next = True
+        elif capitalize_next:
+            result.append(c.upper())
+            capitalize_next = False
+        else:
+            result += c
+
+    return "".join(result)
+
+
 def compose_path(d: Descriptor):
     path: list[Descriptor] = []
     path.append(d)
@@ -85,10 +103,9 @@ def gen_type(field: FieldDescriptor, options: Options):
 
 
 def gen_field(field: FieldDescriptor, options: Options):
-    name = field.name
     typ = gen_type(field, options)
 
-    if options.extra_anno:
+    if options.add_extra_anno:
         typ = f'Annotated[{ typ }, {field.number}, "{TYPES[field.type].name}"]'
 
     if options.maps_as_dict and is_map(field):
@@ -101,22 +118,23 @@ def gen_field(field: FieldDescriptor, options: Options):
             anno = f"list[{typ}]"
         else:
             anno = typ
+
+    name = field.name if options.preserve_names else to_lowercamel(field.name)
     return f'"{ name }": { anno }'
 
 
 def gen_td(desc: Descriptor, options: Options):
     path = compose_path(desc)
-    by_name: dict[str, FieldDescriptor] = desc.fields_by_name
+    fields = [gen_field(desc.fields_by_name[field.name], options) for field in desc.fields]
+    indent = "    " * 2
 
-    fields = [gen_field(by_name[field.name], options) for field in desc.fields]
-
-    fieldlist = "\n".join([f"        { f }," for f in fields])
+    items = "\n".join([f"{ indent }{ f }," for f in fields])
 
     return f"""\
 {path} = TypedDict(
     "{ path }",
     {{
-{ fieldlist }
+{ items }
     }}
 )"""
 
@@ -125,7 +143,7 @@ def gen_document(descs: list[Descriptor], options: Options):
     tds = [gen_td(desc, options) for desc in descs]
 
     type_imports = ["TypedDict", "NotRequired"]
-    if options.extra_anno:
+    if options.add_extra_anno:
         type_imports.append("Annotated")
 
     return f"""\
@@ -136,8 +154,8 @@ from typing import { ', '.join(type_imports) }
 """
 
 
-def main(src: Path, extra_anno: bool, maps: bool):
-    options = Options(extra_anno=extra_anno, maps_as_dict=maps)
+def generate(src: Path, extra_anno: bool = False, maps: bool = True, preserve_names: bool = True):
+    options = Options(add_extra_anno=extra_anno, maps_as_dict=maps, preserve_names=preserve_names)
 
     spec = importlib.util.spec_from_file_location(src.stem, src)
     assert spec
@@ -162,8 +180,9 @@ def main(src: Path, extra_anno: bool, maps: bool):
 @click.argument("dst", type=click.Path(dir_okay=False, path_type=Path))
 @click.option("--extra-anno/--no-extra-anno", help="Add field numbers/protobuf types for reference")
 @click.option("--maps/--no-maps", help="Describe protobuf maps as dicts", default=True)
-def cli(src: Path, dst: Path, extra_anno: bool, maps: bool):
+@click.option("--camel-names/--no-camel-name", help="Convert field names to lowerCamel", default=False)
+def cli(src: Path, dst: Path, extra_anno: bool, maps: bool, camel_names: bool):
     """Create TypedDict declarations from _pb2.py"""
 
-    doc = main(src, extra_anno=extra_anno, maps=maps)
+    doc = generate(src, extra_anno=extra_anno, maps=maps, preserve_names=not camel_names)
     dst.write_text(doc)
