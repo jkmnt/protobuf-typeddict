@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import importlib
 import importlib.util
 import enum
+from types import ModuleType
 from typing import NamedTuple
 
 from google.protobuf.descriptor import Descriptor, FieldDescriptor
@@ -154,14 +155,8 @@ from typing import { ', '.join(type_imports) }
 """
 
 
-def generate(src: Path, extra_anno: bool = False, maps: bool = True, preserve_names: bool = True):
+def generate(module: ModuleType, extra_anno: bool = False, maps: bool = True, preserve_names: bool = True):
     options = Options(add_extra_anno=extra_anno, maps_as_dict=maps, preserve_names=preserve_names)
-
-    spec = importlib.util.spec_from_file_location(src.stem, src)
-    assert spec
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader
-    spec.loader.exec_module(module)
 
     descs: list[Descriptor] = []
 
@@ -184,5 +179,13 @@ def generate(src: Path, extra_anno: bool = False, maps: bool = True, preserve_na
 def cli(src: Path, dst: Path, extra_anno: bool, maps: bool, camel_names: bool):
     """Create TypedDict declarations from protoc-generated Python code"""
 
-    doc = generate(src, extra_anno=extra_anno, maps=maps, preserve_names=not camel_names)
+    src = Path(src)
+
+    spec = importlib.util.spec_from_file_location(src.stem, src)
+    assert spec
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader
+    spec.loader.exec_module(module)
+
+    doc = generate(module, extra_anno=extra_anno, maps=maps, preserve_names=not camel_names)
     dst.write_text(doc)

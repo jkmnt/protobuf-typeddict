@@ -3,7 +3,7 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "protobuf-typeddict"
+name = "pb2td"
 authors = [{ name = "jkmnt" }]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -22,7 +22,7 @@ Source = "https://github.com/jkmnt/protobuf-typeddict"
 
 
 [project.scripts]
-pb2td = "protobuf_typeddict:cli"
+pb2td = "pb2td:cli"
 
 [tool.ruff]
 line-length = 160
