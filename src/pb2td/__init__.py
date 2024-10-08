@@ -4,6 +4,7 @@
 
 __version__ = "0.1.0"
 
+
 from pathlib import Path
 from dataclasses import dataclass
 import importlib
@@ -30,8 +31,8 @@ class Typ(NamedTuple):
 
 TYPES: dict[int, Typ] = {
     8: Typ("bool", "bool"),
-    # 12: Typ("bytes", "bytes"),
-    12: Typ("bytes", "str"),
+    # 12: Typ("bytes", "str | bytes"),
+    12: Typ("bytes", "_Base64"),
     1: Typ("double", "float"),
     14: Typ("enum", "int"),
     7: Typ("fixed32", "int"),
@@ -117,7 +118,7 @@ def gen_field(field: FieldDescriptor, options: Options):
         if kind == Kinds.OPTIONAL:
             anno = f"NotRequired[{typ}]"
         elif kind == Kinds.REPEATED:
-            anno = f"list[{typ}]"
+            anno = f"NotRequired[list[{typ}]]"
         else:
             anno = typ
 
@@ -144,13 +145,15 @@ def gen_td(desc: Descriptor, options: Options):
 def gen_document(descs: list[Descriptor], options: Options):
     tds = [gen_td(desc, options) for desc in descs]
 
-    type_imports = ["TypedDict", "NotRequired"]
+    type_imports = ["TypedDict", "NotRequired", "TypeAlias"]
     if options.add_extra_anno:
         type_imports.append("Annotated")
 
     return f"""\
 # Generated file. Do not edit.
 from typing import { ', '.join(type_imports) }
+
+_Base64: TypeAlias = str
 
 { '\n\n'.join(tds) }
 """
