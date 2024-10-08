@@ -30,7 +30,8 @@ class Typ(NamedTuple):
 
 TYPES: dict[int, Typ] = {
     8: Typ("bool", "bool"),
-    12: Typ("bytes", "bytes"),
+    # 12: Typ("bytes", "bytes"),
+    12: Typ("bytes", "str"),
     1: Typ("double", "float"),
     14: Typ("enum", "int"),
     7: Typ("fixed32", "int"),
