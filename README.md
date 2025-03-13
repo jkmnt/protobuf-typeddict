@@ -48,11 +48,8 @@ User = TypedDict(
 
 ## Installation
 
-The pb2td is not on the PyPI yet.
-Download the code and run
-
 ```shell
-pip install <path>
+pip install git+https://github.com/jkmnt/protobuf-typeddict.git
 ```
 
 ## Usage
